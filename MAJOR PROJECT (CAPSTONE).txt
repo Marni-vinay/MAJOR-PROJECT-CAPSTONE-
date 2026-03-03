@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 StockDash · MERN Capstone (Simulated)</title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js 4 (lightweight) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            transition: background-color 0.2s, color 0.2s;
+            min-height: 100vh;
+        }
+        /* light theme (default) */
+        
+        body.light {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        body.dark {
+            background: #111827;
+            color: #e5e7eb;
+        }
+        
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        /* navbar */
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 0.8rem 2rem;
+            border-radius: 2rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            margin-bottom: 2rem;
+        }
+        
+        body.dark .navbar {
+            background: #1f2937;
+            box-shadow: 0 4px 12px #030712;
+        }
+        
+        .logo h2 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo span {
+            color: #3b82f6;
+        }
+        
+        .nav-items {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .nav-items a {
+            text-decoration: none;
+            color: inherit;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        
+        .nav-items a:hover {
+            color: #3b82f6;
+        }
+        
+        .watchlist-badge {
+            background: #3b82f6;
+            color: white;
+            border-radius: 999px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.8rem;
+            margin-left: 0.3rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        
+        .avatar {
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: inherit;
+        }
+        /* cards & grid */
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 1.8rem;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
+            transition: 0.2s;
+        }
+        
+        body.dark .card {
+            background: #1f2937;
+            box-shadow: 0 8px 16px #030712;
+        }
+        
+        .search-section {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.8rem;
+        }
+        
+        .search-section input {
+            flex: 1;
+            padding: 0.9rem 1.2rem;
+            border-radius: 60px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            font-size: 1rem;
+        }
+        
+        body.dark .search-section input {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .search-section button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 0 1.8rem;
+            border-radius: 60px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .stock-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin: 1.2rem 0;
+            font-size: 1.1rem;
+        }
+        
+        .price-big {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+        
+        .change.positive {
+            color: #10b981;
+        }
+        
+        .change.negative {
+            color: #ef4444;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .btn {
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            background: #e5e7eb;
+            transition: 0.2s;
+        }
+        
+        body.dark .btn {
+            background: #374151;
+            color: #e5e7eb;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        /* watchlist chips */
+        
+        .watchlist-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            margin-top: 1rem;
+        }
+        
+        .watchlist-chip {
+            background: #f3f4f6;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        
+        body.dark .watchlist-chip {
+            background: #374151;
+        }
+        
+        .watchlist-chip i {
+            color: #ef4444;
+            cursor: pointer;
+        }
+        /* table */
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        th,
+        td {
+            padding: 1rem 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        body.dark th,
+        body.dark td {
+            border-color: #374151;
+        }
+        
+        .badge {
+            background: #f59e0b;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            display: inline-block;
+        }
+        
+        .badge.approved {
+            background: #10b981;
+        }
+        
+        .badge.rejected {
+            background: #6b7280;
+        }
+        
+        .admin-actions i {
+            margin: 0 0.5rem;
+            cursor: pointer;
+        }
+        
+        .fa-check-circle {
+            color: #10b981;
+        }
+        
+        .fa-times-circle {
+            color: #ef4444;
+        }
+        
+        hr {
+            margin: 1.5rem 0;
+            opacity: 0.2;
+        }
+        /* switch panel */
+        
+        .panel-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: inherit;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        /* message */
+        
+        .message {
+            padding: 0.8rem;
+            border-radius: 20px;
+            background: #dbeafe;
+            margin: 0.5rem 0;
+        }
+        
+        body.dark .message {
+            background: #1e3a8a;
+            color: white;
+        }
+        /* auth forms */
+        
+        .auth-form {
+            max-width: 400px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 2rem;
+        }
+        
+        body.dark .auth-form {
+            background: #1f2937;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 1rem;
+            margin: 0.8rem 0;
+            border-radius: 60px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .toggle-link {
+            text-align: center;
+            margin-top: 1rem;
+            color: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="light">
+    <div id="app" class="app"></div>
+
+    <script>
+        (function() {
+                // ---------- MOCK STORAGE (simulate DB) ----------
+                const MockDB = {
+                    users: [{
+                        id: '1',
+                        name: 'Admin One',
+                        email: 'admin@demo.com',
+                        password: 'admin123',
+                        role: 'admin'
+                    }, {
+                        id: '2',
+                        name: 'John Trader',
+                        email: 'john@demo.com',
+                        password: 'user123',
+                        role: 'user'
+                    }],
+                    transactions: [{
+                        id: 't1',
+                        userId: '2',
+                        userEmail: 'john@demo.com',
+                        symbol: 'AAPL',
+                        type: 'BUY',
+                        shares: 10,
+                        price: 175.23,
+                        status: 'pending'
+                    }, {
+                        id: 't2',
+                        userId: '2',
+                        userEmail: 'john@demo.com',
+                        symbol: 'TSLA',
+                        type: 'SELL',
+                        shares: 2,
+                        price: 245.67,
+                        status: 'approved'
+                    }, ],
+                    watchlists: {
+                        '2': ['AAPL', 'MSFT']
+                    }, // userId -> symbols
+                    getNextUserId() {
+                        return String(this.users.length + 1);
+                    },
+                    getNextTxId() {
+                        return String(this.transactions.length + 1);
+                    }
+                };
+
+                // ---------- FAKE STOCK API (real-time simulation) ----------
+                const stockCache = new Map();
+
+                function fetchStockQuote(symbol) {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            const base = stockCache.get(symbol) || {
+                                price: 100 + Math.random() * 200,
+                                high: 0,
+                                low: 0,
+                                prev: 0
+                            };
+                            // simulate variation
+                            const changePercent = (Math.random() * 6 - 3) / 100; // -3% .. +3%
+                            const newPrice = base.price * (1 + changePercent);
+                            const quote = {
+                                symbol: symbol.toUpperCase(),
+                                price: Math.round(newPrice * 100) / 100,
+                                high: Math.round(newPrice * 1.02 * 100) / 100,
+                                low: Math.round(newPrice * 0.98 * 100) / 100,
+                                prev: Math.round(base.price * 100) / 100,
+                                change: (newPrice - base.price).toFixed(2),
+                                changePercent: (changePercent * 100).toFixed(2)
+                            };
+                            stockCache.set(symbol, {
+                                price: newPrice,
+                                high: quote.high,
+                                low: quote.low,
+                                prev: base.price
+                            });
+                            resolve(quote);
+                        }, 300);
+                    });
+                }
+
+                // chart history mock (7 days)
+                function getHistory() {
+                    return [22, 25, 23, 28, 30, 27, 29].map(v => v + (Math.random() * 4 - 2));
+                }
+
+                // ---------- CONTEXT SIMULATION (global state) ----------
+                let authState = {
+                    user: null, // { id, name, email, role }
+                    token: null,
+                    watchlistCount: 0
+                };
+                let theme = 'light'; // 'light' or 'dark'
+
+                const listeners = new Set();
+
+                function notify() {
+                    listeners.forEach(fn => fn());
+                }
+
+                // AuthContext
+                function setAuth(user, token) {
+                    authState.user = user;
+                    authState.token = token;
+                    if (user) {
+                        const wl = MockDB.watchlists[user.id] || [];
+                        authState.watchlistCount = wl.length;
+                    } else {
+                        authState.watchlistCount = 0;
+                    }
+                    notify();
+                }
+
+                function login(email, password) {
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            const user = MockDB.users.find(u => u.email === email && u.password === password);
+                            if (user) {
+                                const token = `mock-jwt-${user.id}-${Date.now()}`;
+                                setAuth({
+                                    id: user.id,
+                                    name: user.name,
+                                    email: user.email,
+                                    role: user.role
+                                }, token);
+                                resolve({
+                                    success: true,
+                                    user
+                                });
+                            } else reject('Invalid credentials');
+                        }, 400);
+                    });
+                }
+
+                function signup(name, email, password) {
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            if (MockDB.users.find(u => u.email === email)) return reject('Email exists');
+                            const newUser = {
+                                id: MockDB.getNextUserId(),
+                                name,
+                                email,
+                                password,
+                                role: 'user'
+                            };
+                            MockDB.users.push(newUser);
+                            MockDB.watchlists[newUser.id] = [];
+                            resolve({
+                                success: true
+                            });
+                        }, 400);
+                    });
+                }
+
+                function logout() {
+                    setAuth(null, null);
+                }
+
+                // watchlist helpers
+                function addToWatchlist(symbol) {
+                    if (!authState.user) return;
+                    const uid = authState.user.id;
+                    let list = MockDB.watchlists[uid] || [];
+                    if (!list.includes(symbol)) {
+                        list.push(symbol);
+                        MockDB.watchlists[uid] = list;
+                        authState.watchlistCount = list.length;
+                        notify();
+                    }
+                }
+
+                function removeFromWatchlist(symbol) {
+                    if (!authState.user) return;
+                    const uid = authState.user.id;
+                    let list = MockDB.watchlists[uid] || [];
+                    list = list.filter(s => s !== symbol);
+                    MockDB.watchlists[uid] = list;
+                    authState.watchlistCount = list.length;
+                    notify();
+                }
+
+                // transactions
+                function createTransaction(type, symbol, shares, price) {
+                    if (!authState.user) return;
+                    const newTx = {
+                        id: MockDB.getNextTxId(),
+                        userId: authState.user.id,
+                        userEmail: authState.user.email,
+                        symbol: symbol.toUpperCase(),
+                        type,
+                        shares,
+                        price,
+                        status: 'pending'
+                    };
+                    MockDB.transactions.push(newTx);
+                    notify();
+                }
+
+                // admin approve/reject
+                function updateTxStatus(txId, status) {
+                    const tx = MockDB.transactions.find(t => t.id === txId);
+                    if (tx) {
+                        tx.status = status;
+                        notify();
+                    }
+                }
+
+                // ---------- ThemeContext ----------
+                function toggleTheme() {
+                    theme = theme === 'light' ? 'dark' : 'light';
+                    document.body.className = theme;
+                    notify();
+                }
+
+                // ---------- React-like render ----------
+                function renderApp() {
+                    const root = document.getElementById('app');
+                    if (!authState.user) {
+                        root.innerHTML = renderAuthPages();
+                    } else {
+                        root.innerHTML = renderDashboard();
+                    }
+                    attachEvents();
+                }
+
+                listeners.add(renderApp);
+
+                // ---------- AUTH PAGES (login/signup) ----------
+                let authPage = 'login'; // 'login' or 'signup'
+                function renderAuthPages() {
+                    return `
+          <div class="auth-form">
+            <h2 style="margin-bottom:1.5rem;">📊 StockDash · ${authPage === 'login' ? 'Login' : 'Sign up'}</h2>
+            ${authPage === 'login' ? `
+              <input type="email" id="loginEmail" placeholder="Email" value="john@demo.com" />
+              <input type="password" id="loginPassword" placeholder="Password" value="user123" />
+              <button class="btn btn-primary" style="width:100%;" id="loginBtn">Log in</button>
+              <p class="toggle-link" id="switchToSignup">Create account →</p>
+            ` : `
+              <input type="text" id="signupName" placeholder="Full name" />
+              <input type="email" id="signupEmail" placeholder="Email" />
+              <input type="password" id="signupPassword" placeholder="Password" />
+              <button class="btn btn-primary" style="width:100%;" id="signupBtn">Sign up</button>
+              <p class="toggle-link" id="switchToLogin">← Back to login</p>
+            `}
+            <div id="authMessage" class="message hidden"></div>
+          </div>
+        `;
+      }
+
+      // ---------- DASHBOARD (main app) ----------
+      function renderDashboard() {
+        const user = authState.user;
+        const isAdmin = user?.role === 'admin';
+        const wl = MockDB.watchlists[user.id] || [];
+        // fetch current stock? We'll render static then dynamic update
+        return `
+          <div class="navbar">
+            <div class="logo"><h2>📈 <span>Stock</span>Dash</h2></div>
+            <div class="nav-items">
+              <span><i class="fas fa-chart-line"></i> Markets</span>
+              <span>Watchlist <span class="watchlist-badge" id="watchlistCount">${authState.watchlistCount}</span></span>
+              <div class="user-info">
+                <span>${user.name}</span> <div class="avatar">${user.name[0]}</div>
+                <button class="theme-toggle" id="themeToggleBtn"><i class="fas ${theme==='dark' ? 'fa-sun' : 'fa-moon'}"></i></button>
+                <i class="fas fa-sign-out-alt" id="logoutBtn" style="cursor:pointer;"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-tabs">
+            <button class="tab-btn active" id="tabDashboard">Dashboard</button>
+            ${isAdmin ? '<button class="tab-btn" id="tabAdmin">Admin Panel</button>' : '<button class="tab-btn" id="tabUser">My Trades</button>'}
+          </div>
+
+          <div id="dynamicPanel">
+            ${renderMainPanel()}
+          </div>
+        `;
+      }
+
+      function renderMainPanel() {
+        const user = authState.user;
+        const isAdmin = user?.role === 'admin';
+        if (isAdmin) return renderAdminPanel();
+        else return renderUserPanel();
+      }
+
+      function renderUserPanel() {
+        const wl = MockDB.watchlists[authState.user.id] || [];
+        const userTxs = MockDB.transactions.filter(t => t.userId === authState.user.id);
+        return `
+          <div class="dashboard-grid">
+            <div class="card">
+              <h3>🔍 Stock search</h3>
+              <div class="search-section">
+                <input type="text" id="stockSymbolInput" placeholder="Symbol (e.g. AAPL, TSLA)" value="AAPL" />
+                <button id="searchStockBtn"><i class="fas fa-search"></i></button>
+              </div>
+              <div id="stockQuoteArea">
+                <div style="text-align:center; color:#6b7280;">Search a symbol ↑</div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-success" id="buyStockBtn">Buy</button>
+                <button class="btn btn-danger" id="sellStockBtn">Sell</button>
+                <button class="btn" id="addWatchlistBtn"><i class="far fa-star"></i> Watchlist</button>
+              </div>
+              <div id="tradeMessage" class="message hidden"></div>
+            </div>
+            <div class="card">
+              <h3>📋 Watchlist</h3>
+              <div class="watchlist-items" id="watchlistContainer">
+                ${wl.map(sym => `
+                  <span class="watchlist-chip">${sym} <i class="fas fa-times remove-watch" data-sym="${sym}"></i></span>
+                `).join('')}
+                ${wl.length===0 ? '<p style="opacity:0.6;">Add stocks using ☆</p>' : ''}
+              </div>
+              <hr>
+              <h4>📊 7d history (AAPL example)</h4>
+              <canvas id="priceChart" width="300" height="150"></canvas>
+            </div>
+          </div>
+          <div class="card" style="margin-top:2rem;">
+            <h3>📜 My transactions</h3>
+            <table>
+              <tr><th>Symbol</th><th>Type</th><th>Shares</th><th>Price</th><th>Status</th></tr>
+              ${userTxs.map(tx => `
+                <tr>
+                  <td>${tx.symbol}</td>
+                  <td>${tx.type}</td>
+                  <td>${tx.shares}</td>
+                  <td>$${tx.price}</td>
+                  <td><span class="badge ${tx.status}">${tx.status}</span></td>
+                </tr>
+              `).join('')}
+            </table>
+          </div>
+        `;
+      }
+
+      function renderAdminPanel() {
+        const allUsers = MockDB.users;
+        const pendingTxs = MockDB.transactions.filter(t => t.status === 'pending');
+        return `
+          <div class="card">
+            <h3>👥 All users (${allUsers.length})</h3>
+            <table><tr><th>Name</th><th>Email</th><th>Role</th></tr>
+            ${allUsers.map(u => `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td></tr>`).join('')}
+            </table>
+          </div>
+          <div class="card" style="margin-top:2rem;">
+            <h3>⏳ Pending approvals</h3>
+            <table>
+              <tr><th>User</th><th>Symbol</th><th>Type</th><th>Shares</th><th>Action</th></tr>
+              ${pendingTxs.map(tx => `
+                <tr>
+                  <td>${tx.userEmail}</td><td>${tx.symbol}</td><td>${tx.type}</td><td>${tx.shares}</td>
+                  <td class="admin-actions">
+                    <i class="fas fa-check-circle" data-txid="${tx.id}" data-action="approve"></i>
+                    <i class="fas fa-times-circle" data-txid="${tx.id}" data-action="reject"></i>
+                  </td>
+                </tr>
+              `).join('')}
+            </table>
+          </div>
+        `;
+      }
+
+      // ----- EVENT HANDLING + DYNAMIC UPDATES -----
+      function attachEvents() {
+        // theme toggle
+        document.getElementById('themeToggleBtn')?.addEventListener('click', toggleTheme);
+        document.getElementById('logoutBtn')?.addEventListener('click', () => logout());
+
+        // auth switching
+        document.getElementById('switchToSignup')?.addEventListener('click', (e) => {
+          e.preventDefault(); authPage = 'signup'; renderApp();
+        });
+        document.getElementById('switchToLogin')?.addEventListener('click', (e) => {
+          e.preventDefault(); authPage = 'login'; renderApp();
+        });
+
+        // login / signup actions
+        document.getElementById('loginBtn')?.addEventListener('click', async () => {
+          const email = document.getElementById('loginEmail').value;
+          const pass = document.getElementById('loginPassword').value;
+          try { await login(email, pass); } catch (err) { showMessage('authMessage', err); }
+        });
+        document.getElementById('signupBtn')?.addEventListener('click', async () => {
+          const name = document.getElementById('signupName').value;
+          const email = document.getElementById('signupEmail').value;
+          const pass = document.getElementById('signupPassword').value;
+          try { await signup(name, email, pass); authPage='login'; renderApp(); } catch (err) { showMessage('authMessage', err); }
+        });
+
+        // dashboard tabs
+        document.getElementById('tabDashboard')?.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.getElementById('tabDashboard')?.classList.add('active');
+          document.getElementById('dynamicPanel').innerHTML = renderUserPanel();  // default
+          attachPanelEvents();
+        });
+        document.getElementById('tabAdmin')?.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.getElementById('tabAdmin')?.classList.add('active');
+          document.getElementById('dynamicPanel').innerHTML = renderAdminPanel();
+          attachAdminEvents();
+        });
+        document.getElementById('tabUser')?.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.getElementById('tabUser')?.classList.add('active');
+          document.getElementById('dynamicPanel').innerHTML = renderUserPanel();
+          attachPanelEvents();
+        });
+
+        // stock search, buy, watchlist etc (user panel)
+        attachPanelEvents();
+        attachAdminEvents();
+      }
+
+      function attachPanelEvents() {
+        const searchBtn = document.getElementById('searchStockBtn');
+        const symbolInp = document.getElementById('stockSymbolInput');
+        const quoteDiv = document.getElementById('stockQuoteArea');
+        let currentQuote = null;
+
+        if (searchBtn) {
+          searchBtn.addEventListener('click', async () => {
+            const sym = symbolInp.value.trim().toUpperCase();
+            if (!sym) return;
+            const quote = await fetchStockQuote(sym);
+            currentQuote = quote;
+            quoteDiv.innerHTML = `
+              <div style="display:flex; align-items:baseline; gap:1rem;">
+                <span class="price-big">$${quote.price}</span>
+                <span class="${quote.changePercent >=0 ? 'positive' : 'negative'}">
+                  ${quote.changePercent}% (${quote.change})
+                </span>
+              </div>
+              <div class="stock-meta">
+                <span>📊 H: $${quote.high}</span> <span>📉 L: $${quote.low}</span> <span>🔙 Prev: $${quote.prev}</span>
+              </div>
+            `;
+          });
+        }
+
+        document.getElementById('buyStockBtn')?.addEventListener('click', () => {
+          if (!currentQuote) return alert('Search stock first');
+          const shares = prompt('Shares to buy?', '5');
+          if (shares) {
+            createTransaction('BUY', currentQuote.symbol, Number(shares), currentQuote.price);
+            showMessage('tradeMessage', 'Buy request submitted (pending)');
+          }
+        });
+
+        document.getElementById('sellStockBtn')?.addEventListener('click', () => {
+          if (!currentQuote) return alert('Search stock first');
+          const shares = prompt('Shares to sell?', '3');
+          if (shares) {
+            createTransaction('SELL', currentQuote.symbol, Number(shares), currentQuote.price);
+            showMessage('tradeMessage', 'Sell request submitted');
+          }
+        });
+
+        document.getElementById('addWatchlistBtn')?.addEventListener('click', () => {
+          if (!currentQuote) return alert('Search stock first');
+          addToWatchlist(currentQuote.symbol);
+          renderApp(); // refresh
+        });
+
+        document.querySelectorAll('.remove-watch').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const sym = e.target.dataset.sym;
+            removeFromWatchlist(sym);
+            renderApp();
+          });
+        });
+
+        // draw dummy chart
+        const ctx = document.getElementById('priceChart')?.getContext('2d');
+        if (ctx) {
+          new Chart(ctx, {
+            type: 'line',
+            data: { labels: ['D-6','D-5','D-4','D-3','D-2','D-1','Today'], datasets: [{ label: 'Price', data: getHistory(), borderColor: '#3b82f6' }] }
+          });
+        }
+      }
+
+      function attachAdminEvents() {
+        document.querySelectorAll('.fa-check-circle').forEach(icon => {
+          icon.addEventListener('click', (e) => {
+            const txid = e.target.dataset.txid; updateTxStatus(txid, 'approved'); renderApp();
+          });
+        });
+        document.querySelectorAll('.fa-times-circle').forEach(icon => {
+          icon.addEventListener('click', (e) => {
+            const txid = e.target.dataset.txid; updateTxStatus(txid, 'rejected'); renderApp();
+          });
+        });
+      }
+
+      function showMessage(elId, text) {
+        const msg = document.getElementById(elId);
+        if (msg) { msg.classList.remove('hidden'); msg.innerText = text; setTimeout(() => msg.classList.add('hidden'), 2500); }
+      }
+
+      // initial render
+      renderApp();
+    })();
+    </script>
+</body>
+
+</html>
